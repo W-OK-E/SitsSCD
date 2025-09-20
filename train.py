@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from lightning_fabric.utilities.rank_zero import _get_rank
 
 
-# Registering the "eval" resolver allows for advanced config
+# Registering the "eval" resolver allows for advanced config, i.e. basically the values can be dynamic now
 # interpolation with arithmetic operations in hydra:
 # https://omegaconf.readthedocs.io/en/2.3_branch/how_to_guides.html
 OmegaConf.register_new_resolver("eval", eval)
@@ -35,6 +35,13 @@ def wandb_init(cfg):
 
 def load_model(cfg, dict_config, wandb_id, callbacks):
     directory = cfg.checkpoints.dirpath
+    if(cfg.mode == "eval" and isfile(join(directory, "best_miou_ckpt_in.ckpt"))):
+        checkpoint_path = join(directory, "best_miou_ckpt_in.ckpt")
+        logger = instantiate(cfg.logger, id=wandb_id, resume="allow")
+        model = SitsScdModel.load_from_checkpoint(checkpoint_path, cfg=cfg.model)
+        ckpt_path = join(directory, "best_miou_ckpt_in.ckpt")
+        print(f"Loading form checkpoint ... {ckpt_path}")
+
     if isfile(join(directory, "last.ckpt")):
         checkpoint_path = join(directory, "last.ckpt")
         logger = instantiate(cfg.logger, id=wandb_id, resume="allow")

@@ -11,7 +11,6 @@ class WarmupLR:
         warmup_steps (int): number of warmup steps
 
     """
-
     def __init__(self, optimizer, warmup_steps):
         self.optimizer = optimizer
         self.warmup_steps = warmup_steps

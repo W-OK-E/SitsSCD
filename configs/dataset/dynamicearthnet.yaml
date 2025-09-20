@@ -1,5 +1,5 @@
 name: DynamicEarthNet
-global_batch_size: 8
+global_batch_size: 2
 num_channels: 4
 num_classes: 6
 ignore_index: 6
@@ -40,3 +40,4 @@ test_dataset_in:
   path: ${data_dir}/DynamicEarthNet/
   split: test
   domain_shift: false
+sipiitkgpintern123

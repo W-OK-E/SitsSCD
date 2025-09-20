@@ -1,6 +1,7 @@
 import pytorch_lightning as L
 import torch
 import torch.nn as nn
+from PIL import Image
 from hydra.utils import instantiate
 
 
@@ -18,6 +19,13 @@ class SitsScdModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         pred = self.model(batch)
         loss = self.loss(pred, batch, average=True)
+
+        if(batch_idx % 50 == 0):
+            pred["pred"] = torch.argmax(pred["logits"], dim=2)
+            Image.fromarray(pred["pred"][0][0].cpu().numpy().astype('uint8')).save(f"/home/ubuntu/PS_10/sat_change/SitsSCD/outputs/running_visuals/pred_{batch_idx}.tif")
+            Image.fromarray(batch["gt"][0][0].cpu().numpy().astype('uint8')).save(f"/home/ubuntu/PS_10/sat_change/SitsSCD/outputs/running_visuals/gt_{batch_idx}.tif")
+
+
         for metric_name, metric_value in loss.items():
             self.log(
                 f"train/{metric_name}",
@@ -32,6 +40,14 @@ class SitsScdModel(L.LightningModule):
     def validation_step(self, batch, batch_idx, dataloader_idx):
         pred = self.model(batch)
         pred["pred"] = torch.argmax(pred["logits"], dim=2)
+        Image.fromarray(pred["pred"][0][0].cpu().numpy().astype('uint8')).save(f"/home/ubuntu/PS_10/sat_change/SitsSCD/outputs/test/pred_{dataloader_idx}_{batch_idx}.tif")
+        Image.fromarray(batch["gt"][0][0].cpu().numpy().astype('uint8')).save(f"/home/ubuntu/PS_10/sat_change/SitsSCD/outputs/test/gt_{dataloader_idx}_{batch_idx}.tif")
+        
+        #Save only ten results for visualization
+        if batch_idx > 10:
+            import sys
+            sys.exit(0)
+
         loss = self.loss(pred, batch, average=True)["loss"]
         self.val_metrics[self.domain_dict[dataloader_idx]].update(pred["pred"], batch["gt"])
         self.log("val/loss", loss, sync_dist=True, on_step=False, on_epoch=True)
@@ -52,6 +68,14 @@ class SitsScdModel(L.LightningModule):
     def test_step(self, batch, batch_idx, dataloader_idx):
         pred = self.model(batch)
         pred["pred"] = torch.argmax(pred["logits"], dim=2)
+        
+        #Save only ten results for visualization
+        if batch_idx > 10:
+            import sys
+            sys.exit(0)
+        
+        Image.fromarray(pred["pred"][0][0].cpu().numpy().astype('uint8')).save(f"/home/ubuntu/PS_10/sat_change/SitsSCD/outputs/test/pred_{dataloader_idx}_{batch_idx}.tif")
+        Image.fromarray(batch["gt"][0][0].cpu().numpy().astype('uint8')).save(f"/home/ubuntu/PS_10/sat_change/SitsSCD/outputs/test/gt_{dataloader_idx}_{batch_idx}.tif")
         self.test_metrics[self.domain_dict[dataloader_idx]].update(pred["pred"], batch["gt"])
 
     def on_test_epoch_end(self):
